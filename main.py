@@ -1,6 +1,6 @@
 import servicios
+import ventas
 from modelos import Accesorio, Equipo, EquipoReacondicionado, Inventario
-
 
 def cargar_datos_ejemplo(inventario):
     """Carga productos de ejemplo para poder probar el sistema."""
@@ -58,7 +58,9 @@ def main():
             servicios.listar_productos(inventario)
         elif opcion == "3":
             servicios.buscar_producto(inventario)
-        elif opcion in ("4", "5", "6", "7", "8"):
+        elif opcion == "4":
+            ventas.registrar_venta(inventario)
+        elif opcion in ("5", "6", "7", "8"):
             proximamente()
         elif opcion == "0":
             print("\nHasta luego.")
