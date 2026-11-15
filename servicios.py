@@ -1,4 +1,4 @@
-from modelos import Accesorio, Equipo, EquipoReacondicionado
+from modelos import Accesorio, Equipo, EquipoReacondicionado, CATEGORIAS
 
 # ---------- Entrada de datos con validación ----------
 
@@ -47,6 +47,19 @@ def pedir_codigo_nuevo(inventario, ejemplo="A01"):
             return codigo
 
 
+def pedir_categoria():
+    """Muestra las categorías (tupla) y devuelve la tupla elegida."""
+    print("\nCategoría:")
+    for numero, (_, nombre) in enumerate(CATEGORIAS, start=1):
+        print(f"  {numero}. {nombre}")
+
+    while True:
+        opcion = input(f"Elige la categoría (1-{len(CATEGORIAS)}): ").strip()
+        if opcion.isdigit() and 1 <= int(opcion) <= len(CATEGORIAS):
+            return CATEGORIAS[int(opcion) - 1]
+        print("  Error: opción inválida.")
+
+
 # ---------- Opciones del menú ----------
 
 def registrar_producto(inventario):
@@ -67,8 +80,10 @@ def registrar_producto(inventario):
     nombre = leer_texto("Nombre: ")
     precio = leer_decimal("Precio (S/): ")
     stock = leer_entero("Stock inicial: ")
+    categoria = pedir_categoria()
 
-    datos = {"codigo": codigo, "nombre": nombre, "precio": precio, "stock": stock}
+    datos = {"codigo": codigo, "nombre": nombre, "precio": precio,
+             "stock": stock, "categoria": categoria}
 
     if tipo == "1":
         datos["compatible_con"] = leer_texto("Compatible con (ej: PC, Android, Universal): ")
@@ -87,15 +102,19 @@ def registrar_producto(inventario):
 
 def listar_productos(inventario):
     print("\n--- LISTA DE PRODUCTOS ---")
-    productos = inventario.listar()
+    grupos = inventario.agrupar_por_categoria()  # {categoria: [productos]}
 
-    if not productos:
+    if not grupos:
         print("No hay productos registrados todavía.")
         return
 
-    for p in productos:
-        print(p.descripcion())  # polimorfismo: cada clase muestra distinto
-    print(f"\nTotal: {len(productos)} producto(s)")
+    for categoria, productos in grupos.items():
+        print(f"\n[{categoria}] ({len(productos)})")
+        for p in productos:
+            print(f"  {p.descripcion()}")  # polimorfismo: cada clase muestra distinto
+
+    total = sum(len(productos) for productos in grupos.values())
+    print(f"\nTotal: {total} producto(s) en {len(grupos)} categoría(s)")
 
 
 def buscar_producto(inventario):
