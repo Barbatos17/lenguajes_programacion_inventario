@@ -1,14 +1,37 @@
+# Categorías disponibles: tupla de tuplas (id, nombre). Son inmutables.
+CATEGORIAS = (
+    ("PER", "Periféricos"),
+    ("ENE", "Cargadores y energía"),
+    ("PRO", "Fundas y protección"),
+    ("LAP", "Laptops"),
+    ("CEL", "Celulares y tablets"),
+    ("OTR", "Otros"),
+)
+
+CATEGORIA_POR_DEFECTO = CATEGORIAS[-1]  # ("OTR", "Otros")
+
+
+def obtener_categoria(id_categoria):
+    """Devuelve la tupla (id, nombre) de la categoría, o la de por defecto."""
+    for categoria in CATEGORIAS:
+        if categoria[0] == id_categoria:
+            return categoria
+    return CATEGORIA_POR_DEFECTO
+
+
 class Producto:
     """Clase base para todos los productos de la tienda."""
 
-    def __init__(self, codigo, nombre, precio, stock):
+    def __init__(self, codigo, nombre, precio, stock, categoria=CATEGORIA_POR_DEFECTO):
         self.codigo = codigo
         self.nombre = nombre
         self.precio = precio
         self.stock = stock
+        self.categoria = categoria  # tupla (id, nombre)
 
     def descripcion(self):
-        return f"[{self.codigo}] {self.nombre} - S/ {self.precio:.2f} | Stock: {self.stock}"
+        return (f"[{self.codigo}] {self.nombre} - S/ {self.precio:.2f} | "
+                f"Stock: {self.stock} | Categoría: {self.categoria[1]}")
 
     def tipo(self):
         return "General"
@@ -58,16 +81,27 @@ class EquipoReacondicionado(Reacondicionado, Equipo):
 
 
 class Inventario:
-    """Maneja la lista de productos."""
+    """Maneja los productos en un diccionario {codigo: producto}."""
 
     def __init__(self):
-        self.productos = []
+        self.productos = {}
 
     def agregar(self, producto):
-        self.productos.append(producto)
+        self.productos[producto.codigo] = producto
 
     def existe_codigo(self, codigo):
-        return any(p.codigo == codigo for p in self.productos)
+        return codigo in self.productos
+
+    def obtener(self, codigo):
+        """Devuelve el producto con ese código, o None si no existe."""
+        return self.productos.get(codigo)
 
     def listar(self):
-        return self.productos
+        return list(self.productos.values())
+
+    def agrupar_por_categoria(self):
+        """Devuelve un diccionario {nombre_categoria: [productos]}."""
+        grupos = {}
+        for p in self.productos.values():
+            grupos.setdefault(p.categoria[1], []).append(p)
+        return grupos

@@ -43,8 +43,7 @@ ventas_registradas = []
 
 def buscar_por_codigo(inventario, codigo):
     """Devuelve el producto con ese código, o None si no existe."""
-    coincidencias = list(filter(lambda p: p.codigo == codigo, inventario.listar()))
-    return coincidencias[0] if coincidencias else None
+    return inventario.obtener(codigo)
 
 
 def mostrar_productos_disponibles(inventario):
