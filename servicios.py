@@ -181,22 +181,33 @@ def reponer_stock(inventario):
         print("  Error: la cantidad debe ser mayor a 0.")
 
     producto.stock += cantidad
-    print(
-        f"\nStock repuesto correctamente. "
-        f"'{producto.nombre}' ahora tiene {producto.stock} unidad(es)."
-    )
+    print(f"\nStock repuesto correctamente. "
+          f"'{producto.nombre}' ahora tiene {producto.stock} unidad(es).")
 
 
-def detectar_stock_bajo(inventario, limite=5):
-    print(f"\n--- STOCK BAJO (menos de {limite} unidades) ---")
+# ---------- Opción 7: Detectar stock bajo (closure) ----------
+
+def crear_filtro_stock_bajo(limite):
+    """Closure: recuerda el límite mínimo de stock para evaluar cada producto."""
+    def tiene_stock_bajo(producto):
+        return producto.stock < limite
+
+    return tiene_stock_bajo
+
+
+def detectar_stock_bajo(inventario):
+    print("\n--- DETECTAR STOCK BAJO ---")
     productos = inventario.listar()
 
     if not productos:
         print("No hay productos registrados todavía.")
         return
 
-    bajos = [p for p in productos if p.stock < limite]
+    limite = leer_entero("Mostrar productos con stock menor a (ej: 5): ")
+    es_stock_bajo = crear_filtro_stock_bajo(limite)
+    bajos = list(filter(es_stock_bajo, productos))
 
+    print(f"\n--- STOCK BAJO (menos de {limite} unidades) ---")
     if not bajos:
         print("Todos los productos tienen stock suficiente.")
         return
