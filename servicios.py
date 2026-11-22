@@ -143,3 +143,22 @@ def buscar_producto(inventario):
     print(f"\nResultados ({len(encontrados)}):")
     for p in encontrados:
         print(f"  ({p.tipo()}) {p.descripcion()}")
+
+
+def detectar_stock_bajo(inventario, limite=5):
+    print(f"\n--- STOCK BAJO (menos de {limite} unidades) ---")
+    productos = inventario.listar()
+
+    if not productos:
+        print("No hay productos registrados todavía.")
+        return
+
+    bajos = [p for p in productos if p.stock < limite]
+
+    if not bajos:
+        print("Todos los productos tienen stock suficiente.")
+        return
+
+    for p in bajos:
+        print(f"  ({p.tipo()}) {p.descripcion()}")
+    print(f"\nTotal con stock bajo: {len(bajos)} producto(s)")
