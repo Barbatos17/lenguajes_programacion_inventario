@@ -144,6 +144,8 @@ def buscar_producto(inventario):
     for p in encontrados:
         print(f"  ({p.tipo()}) {p.descripcion()}")
 
+def reponer_stock(inventario):
+    print("\n--- REPONER STOCK ---")
 
 def detectar_stock_bajo(inventario, limite=5):
     print(f"\n--- STOCK BAJO (menos de {limite} unidades) ---")
@@ -153,6 +155,29 @@ def detectar_stock_bajo(inventario, limite=5):
         print("No hay productos registrados todavía.")
         return
 
+    print("Productos actuales:")
+    for p in productos:
+        print(f"  {p.codigo} - {p.nombre} | Stock actual: {p.stock}")
+
+    codigo = leer_texto("\nCódigo del producto a reponer: ").upper()
+    coincidencias = list(filter(lambda p: p.codigo == codigo, productos))
+
+    if not coincidencias:
+        print("  Error: código no encontrado.")
+        return
+
+    producto = coincidencias[0]
+    print(f"  Producto: {producto.nombre} | Stock actual: {producto.stock}")
+
+    while True:
+        cantidad = leer_entero("Cantidad a agregar: ")
+        if cantidad > 0:
+            break
+        print("  Error: la cantidad debe ser mayor a 0.")
+
+    producto.stock += cantidad
+    print(f"\nStock repuesto correctamente. "
+          f"'{producto.nombre}' ahora tiene {producto.stock} unidad(es).")
     bajos = [p for p in productos if p.stock < limite]
 
     if not bajos:
