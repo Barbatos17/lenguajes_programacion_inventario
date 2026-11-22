@@ -1,26 +1,26 @@
 import servicios
 import ventas
-from modelos import Accesorio, Equipo, EquipoReacondicionado, Inventario
+from modelos import Accesorio, Equipo, EquipoReacondicionado, Inventario, obtener_categoria
 
 def cargar_datos_ejemplo(inventario):
     """Carga productos de ejemplo para poder probar el sistema."""
     inventario.agregar(Accesorio(
-        codigo="A01", nombre="Mouse Logitech M170", precio=39.9, stock=25,
+        codigo="A01", categoria=obtener_categoria("PER"), nombre="Mouse Logitech M170", precio=39.9, stock=25,
         compatible_con="PC y laptop"))
     inventario.agregar(Accesorio(
-        codigo="A02", nombre="Cargador USB-C 65W", precio=79.0, stock=15,
+        codigo="A02", categoria=obtener_categoria("ENE"), nombre="Cargador USB-C 65W", precio=79.0, stock=15,
         compatible_con="Laptop y celular"))
     inventario.agregar(Accesorio(
-        codigo="A03", nombre="Funda para laptop 15 pulgadas", precio=45.0, stock=10,
+        codigo="A03", categoria=obtener_categoria("PRO"), nombre="Funda para laptop 15 pulgadas", precio=45.0, stock=10,
         compatible_con="Laptop 15 pulgadas"))
     inventario.agregar(Equipo(
-        codigo="E01", nombre="Laptop Lenovo IdeaPad 3", precio=2199.0, stock=6,
+        codigo="E01", categoria=obtener_categoria("LAP"), nombre="Laptop Lenovo IdeaPad 3", precio=2199.0, stock=6,
         meses_garantia=12))
     inventario.agregar(Equipo(
-        codigo="E02", nombre="Samsung Galaxy A15", precio=799.0, stock=9,
+        codigo="E02", categoria=obtener_categoria("CEL"), nombre="Samsung Galaxy A15", precio=799.0, stock=9,
         meses_garantia=12))
     inventario.agregar(EquipoReacondicionado(
-        codigo="R01", nombre="Laptop HP ProBook reacondicionada", precio=1299.0, stock=3,
+        codigo="R01", categoria=obtener_categoria("LAP"), nombre="Laptop HP ProBook reacondicionada", precio=1299.0, stock=3,
         meses_garantia=6, meses_uso=18))
 
 
@@ -63,6 +63,9 @@ def main():
         elif opcion == "5":
             servicios.reponer_stock(inventario)
         elif opcion in ("6", "7", "8"):
+        elif opcion == "7":
+            servicios.detectar_stock_bajo(inventario)
+        elif opcion in ("5", "6", "8"):
             proximamente()
         elif opcion == "0":
             print("\nHasta luego.")
