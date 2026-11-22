@@ -1,6 +1,13 @@
 import servicios
 import ventas
-from modelos import Accesorio, Equipo, EquipoReacondicionado, Inventario, obtener_categoria
+from modelos import (
+    Accesorio,
+    Equipo,
+    EquipoReacondicionado,
+    Inventario,
+    obtener_categoria,
+)
+
 
 def cargar_datos_ejemplo(inventario):
     """Carga productos de ejemplo para poder probar el sistema."""
@@ -62,10 +69,9 @@ def main():
             ventas.registrar_venta(inventario)
         elif opcion == "5":
             servicios.reponer_stock(inventario)
-        elif opcion in ("6", "7", "8"):
         elif opcion == "7":
             servicios.detectar_stock_bajo(inventario)
-        elif opcion in ("5", "6", "8"):
+        elif opcion in ("6", "8"):
             proximamente()
         elif opcion == "0":
             print("\nHasta luego.")

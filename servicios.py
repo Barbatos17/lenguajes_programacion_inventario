@@ -1,6 +1,7 @@
-from modelos import Accesorio, Equipo, EquipoReacondicionado, CATEGORIAS
+from modelos import CATEGORIAS, Accesorio, Equipo, EquipoReacondicionado
 
 # ---------- Entrada de datos con validación ----------
+
 
 def leer_texto(mensaje):
     """Pide un texto que no esté vacío."""
@@ -62,6 +63,7 @@ def pedir_categoria():
 
 # ---------- Opciones del menú ----------
 
+
 def registrar_producto(inventario):
     print("\n--- REGISTRAR PRODUCTO ---")
     print("Tipo de producto:")
@@ -82,8 +84,13 @@ def registrar_producto(inventario):
     stock = leer_entero("Stock inicial: ")
     categoria = pedir_categoria()
 
-    datos = {"codigo": codigo, "nombre": nombre, "precio": precio,
-             "stock": stock, "categoria": categoria}
+    datos = {
+        "codigo": codigo,
+        "nombre": nombre,
+        "precio": precio,
+        "stock": stock,
+        "categoria": categoria,
+    }
 
     if tipo == "1":
         datos["compatible_con"] = leer_texto("Compatible con (ej: PC, Android, Universal): ")
@@ -144,11 +151,9 @@ def buscar_producto(inventario):
     for p in encontrados:
         print(f"  ({p.tipo()}) {p.descripcion()}")
 
+
 def reponer_stock(inventario):
     print("\n--- REPONER STOCK ---")
-
-def detectar_stock_bajo(inventario, limite=5):
-    print(f"\n--- STOCK BAJO (menos de {limite} unidades) ---")
     productos = inventario.listar()
 
     if not productos:
@@ -176,8 +181,20 @@ def detectar_stock_bajo(inventario, limite=5):
         print("  Error: la cantidad debe ser mayor a 0.")
 
     producto.stock += cantidad
-    print(f"\nStock repuesto correctamente. "
-          f"'{producto.nombre}' ahora tiene {producto.stock} unidad(es).")
+    print(
+        f"\nStock repuesto correctamente. "
+        f"'{producto.nombre}' ahora tiene {producto.stock} unidad(es)."
+    )
+
+
+def detectar_stock_bajo(inventario, limite=5):
+    print(f"\n--- STOCK BAJO (menos de {limite} unidades) ---")
+    productos = inventario.listar()
+
+    if not productos:
+        print("No hay productos registrados todavía.")
+        return
+
     bajos = [p for p in productos if p.stock < limite]
 
     if not bajos:

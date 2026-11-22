@@ -1,9 +1,10 @@
 from datetime import datetime
 from functools import reduce
-from servicios import leer_texto, leer_entero
 
+from servicios import leer_entero, leer_texto
 
-#Código de venta automático (closure)
+# Código de venta automático (closure)
+
 
 def crear_generador_codigos():
     ultimo = 0
@@ -21,18 +22,21 @@ generar_codigo = crear_generador_codigos()
 
 # Clase Venta
 
+
 class Venta:
     """Guarda una venta ya confirmada."""
 
     def __init__(self, codigo, fecha, lineas, total):
         self.codigo = codigo
         self.fecha = fecha
-        self.lineas = lineas   
+        self.lineas = lineas
         self.total = total
 
     def descripcion(self):
-        return (f"Venta #{self.codigo} | {self.fecha} | "
-                f"{len(self.lineas)} producto(s) | Total: S/ {self.total:.2f}")
+        return (
+            f"Venta #{self.codigo} | {self.fecha} | "
+            f"{len(self.lineas)} producto(s) | Total: S/ {self.total:.2f}"
+        )
 
 
 # Lista donde se guardan las ventas confirmadas (en memoria, sin base de datos)
@@ -40,6 +44,7 @@ ventas_registradas = []
 
 
 # Funciones de apoyo
+
 
 def buscar_por_codigo(inventario, codigo):
     """Devuelve el producto con ese código, o None si no existe."""
@@ -61,7 +66,7 @@ def calcular_total(inventario, caja):
     """Suma precio x cantidad de cada producto de la caja (map + reduce)."""
     subtotales = map(
         lambda item: buscar_por_codigo(inventario, item[0]).precio * item[1],
-        caja.items()
+        caja.items(),
     )
     return reduce(lambda a, b: a + b, subtotales, 0)
 
@@ -77,7 +82,8 @@ def mostrar_resumen(inventario, caja):
     print(f"  TOTAL: S/ {calcular_total(inventario, caja):.2f}")
 
 
-#  La caja (diccionario {codigo: cantidad}) 
+# La caja (diccionario {codigo: cantidad})
+
 
 def pedir_producto(inventario, caja):
     """Pide código y cantidad, valida y agrega a la caja."""
@@ -102,8 +108,10 @@ def pedir_producto(inventario, caja):
         return
 
     if ya_en_caja + cantidad > producto.stock:
-        print(f"  Advertencia: stock no disponible. "
-              f"Solo puedes agregar {disponible} unidad(es) de '{producto.nombre}'.")
+        print(
+            f"  Advertencia: stock no disponible. "
+            f"Solo puedes agregar {disponible} unidad(es) de '{producto.nombre}'."
+        )
         return
 
     caja[codigo] = ya_en_caja + cantidad
@@ -123,7 +131,8 @@ def quitar_producto(caja):
         print("  Error: ese producto no está en la caja.")
 
 
-# Confirmar la venta 
+# Confirmar la venta
+
 
 def confirmar_venta(inventario, caja):
     """Descuenta el stock, crea la Venta y la guarda."""
@@ -131,14 +140,16 @@ def confirmar_venta(inventario, caja):
     for codigo, cantidad in caja.items():
         p = buscar_por_codigo(inventario, codigo)
         p.stock -= cantidad
-        lineas.append({
-            "codigo": codigo,
-            "nombre": p.nombre,
-            "cantidad": cantidad,
-            "precio": p.precio,
-        })
+        lineas.append(
+            {
+                "codigo": codigo,
+                "nombre": p.nombre,
+                "cantidad": cantidad,
+                "precio": p.precio,
+            }
+        )
 
-    total = sum(map(lambda l: l["precio"] * l["cantidad"], lineas))
+    total = sum(linea["precio"] * linea["cantidad"] for linea in lineas)
     fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
     venta = Venta(generar_codigo(), fecha, lineas, total)
     ventas_registradas.append(venta)
@@ -146,6 +157,7 @@ def confirmar_venta(inventario, caja):
 
 
 # Opción 4 del menú
+
 
 def registrar_venta(inventario):
     print("\n--- REGISTRAR VENTA ---")
@@ -173,8 +185,10 @@ def registrar_venta(inventario):
             respuesta = leer_texto("\n¿Confirmar venta? (s/n): ").lower()
             if respuesta == "s":
                 venta = confirmar_venta(inventario, caja)
-                print(f"\nVenta #{venta.codigo} registrada. "
-                      f"Total: S/ {venta.total:.2f}")
+                print(
+                    f"\nVenta #{venta.codigo} registrada. "
+                    f"Total: S/ {venta.total:.2f}"
+                )
                 return
             print("  Aún puedes seguir editando la caja.")
         elif opcion == "0":
