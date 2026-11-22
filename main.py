@@ -60,7 +60,9 @@ def main():
             servicios.buscar_producto(inventario)
         elif opcion == "4":
             ventas.registrar_venta(inventario)
-        elif opcion in ("5", "6", "7", "8"):
+        elif opcion == "7":
+            servicios.detectar_stock_bajo(inventario)
+        elif opcion in ("5", "6", "8"):
             proximamente()
         elif opcion == "0":
             print("\nHasta luego.")
