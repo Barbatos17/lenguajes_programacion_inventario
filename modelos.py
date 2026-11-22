@@ -30,8 +30,10 @@ class Producto:
         self.categoria = categoria  # tupla (id, nombre)
 
     def descripcion(self):
-        return (f"[{self.codigo}] {self.nombre} - S/ {self.precio:.2f} | "
-                f"Stock: {self.stock} | Categoría: {self.categoria[1]}")
+        return (
+            f"[{self.codigo}] {self.nombre} - S/ {self.precio:.2f} | "
+            f"Stock: {self.stock} | Categoría: {self.categoria[1]}"
+        )
 
     def tipo(self):
         return "General"
