@@ -1,3 +1,5 @@
+from functools import singledispatchmethod
+
 # Categorías disponibles: tupla de tuplas (id, nombre). Son inmutables.
 CATEGORIAS = (
     ("PER", "Periféricos"),
@@ -53,7 +55,7 @@ class Accesorio(Producto):
         super().__init__(**kwargs)
         self.compatible_con = compatible_con
 
-    def descripcion(self):  # polimorfismo
+    def descripcion(self):  # polimorfismo (sobrescritura)
         return super().descripcion() + f" | Compatible con: {self.compatible_con}"
 
     def tipo(self):
@@ -66,7 +68,7 @@ class Equipo(Producto):
         super().__init__(**kwargs)
         self.meses_garantia = meses_garantia
 
-    def descripcion(self):  # polimorfismo
+    def descripcion(self):  # polimorfismo (sobrescritura)
         return super().descripcion() + f" | Garantía: {self.meses_garantia} meses"
 
     def tipo(self):
@@ -75,7 +77,7 @@ class Equipo(Producto):
 
 # Herencia múltiple donde hereda de Reacondicionado y de Equipo
 class EquipoReacondicionado(Reacondicionado, Equipo):
-    def descripcion(self):  # polimorfismo
+    def descripcion(self):  # polimorfismo (sobrescritura)
         return super().descripcion() + f" | Uso previo: {self.meses_uso} meses"
 
     def tipo(self):
@@ -107,3 +109,23 @@ class Inventario:
         for p in self.productos.values():
             grupos.setdefault(p.categoria[1], []).append(p)
         return grupos
+
+    # Sobrecarga de métodos: el mismo método "buscar" se comporta distinto
+    # según el tipo del parámetro (str o tuple).
+    @singledispatchmethod
+    def buscar(self, criterio):
+        raise TypeError("Criterio de búsqueda no soportado")
+
+    @buscar.register
+    def _(self, criterio: str):
+        """Sobrecarga 1: busca por código o parte del nombre."""
+        texto = criterio.lower()
+        return [
+            p for p in self.productos.values()
+            if texto == p.codigo.lower() or texto in p.nombre.lower()
+        ]
+
+    @buscar.register
+    def _(self, criterio: tuple):
+        """Sobrecarga 2: busca por categoría (tupla id, nombre)."""
+        return [p for p in self.productos.values() if p.categoria == criterio]
