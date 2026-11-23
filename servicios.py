@@ -1,4 +1,27 @@
+import textwrap
+
+import ui
 from modelos import CATEGORIAS, Accesorio, Equipo, EquipoReacondicionado
+
+
+def mostrar_tabla_productos(productos, limite=5):
+    """Tabla estándar de productos (la usan servicios.py y ventas.py)."""
+    filas = [
+        [
+            f"{ui.ACENTO}{p.codigo}{ui.RESET}",
+            p.nombre,
+            ui.etiqueta_tipo(p.tipo()),
+            f"S/ {p.precio:.2f}",
+            ui.nivel_stock(p.stock, limite),
+        ]
+        for p in productos
+    ]
+    ui.tabla(
+        ["CÓDIGO", "NOMBRE", "TIPO", "PRECIO", "STOCK"],
+        filas,
+        ["<", "<", "<", ">", "<"],
+    )
+
 
 # ---------- Entrada de datos con validación ----------
 
@@ -6,36 +29,36 @@ from modelos import CATEGORIAS, Accesorio, Equipo, EquipoReacondicionado
 def leer_texto(mensaje):
     """Pide un texto que no esté vacío."""
     while True:
-        valor = input(mensaje).strip()
+        valor = ui.pedir(mensaje)
         if valor:
             return valor
-        print("  Error: no puede estar vacío.")
+        ui.mensaje_error("No puede estar vacío.")
 
 
 def leer_decimal(mensaje):
     """Pide un número decimal no negativo."""
     while True:
         try:
-            valor = float(input(mensaje))
+            valor = float(ui.pedir(mensaje))
             if valor < 0:
-                print("  Error: no puede ser negativo.")
+                ui.mensaje_error("No puede ser negativo.")
                 continue
             return valor
         except ValueError:
-            print("  Error: escribe un número válido.")
+            ui.mensaje_error("Escribe un número válido.")
 
 
 def leer_entero(mensaje):
     """Pide un número entero no negativo."""
     while True:
         try:
-            valor = int(input(mensaje))
+            valor = int(ui.pedir(mensaje))
             if valor < 0:
-                print("  Error: no puede ser negativo.")
+                ui.mensaje_error("No puede ser negativo.")
                 continue
             return valor
         except ValueError:
-            print("  Error: escribe un número entero válido.")
+            ui.mensaje_error("Escribe un número entero válido.")
 
 
 def pedir_codigo_nuevo(inventario, ejemplo="A01"):
@@ -43,41 +66,44 @@ def pedir_codigo_nuevo(inventario, ejemplo="A01"):
     while True:
         codigo = leer_texto(f"Código (ej: {ejemplo}): ").upper()
         if inventario.existe_codigo(codigo):
-            print("  Error: ese código ya existe, prueba con otro.")
+            ui.mensaje_error("Ese código ya existe, prueba con otro.")
         else:
             return codigo
 
 
 def pedir_categoria():
     """Muestra las categorías (tupla) y devuelve la tupla elegida."""
-    print("\nCategoría:")
-    for numero, (_, nombre) in enumerate(CATEGORIAS, start=1):
-        print(f"  {numero}. {nombre}")
+    ui.seccion("Categoría")
+    ui.opciones(
+        [(str(numero), nombre) for numero, (_, nombre) in enumerate(CATEGORIAS, start=1)]
+    )
 
     while True:
-        opcion = input(f"Elige la categoría (1-{len(CATEGORIAS)}): ").strip()
+        opcion = ui.pedir(f"Elige la categoría (1-{len(CATEGORIAS)}): ")
         if opcion.isdigit() and 1 <= int(opcion) <= len(CATEGORIAS):
             return CATEGORIAS[int(opcion) - 1]
-        print("  Error: opción inválida.")
+        ui.mensaje_error("Opción inválida.")
 
 
 # ---------- Opciones del menú ----------
 
 
 def registrar_producto(inventario):
-    print("\n--- REGISTRAR PRODUCTO ---")
-    print("Tipo de producto:")
-    print("  1. Accesorio (mouse, cargador, funda)")
-    print("  2. Equipo (laptop, celular, tablet)")
-    print("  3. Equipo reacondicionado")
+    ui.seccion("Registrar producto")
+    ui.opciones([
+        ("1", "Accesorio (mouse, cargador, funda)"),
+        ("2", "Equipo (laptop, celular, tablet)"),
+        ("3", "Equipo reacondicionado"),
+    ])
 
     while True:
-        tipo = input("Elige el tipo (1-3): ").strip()
+        tipo = ui.pedir("Elige el tipo (1-3): ")
         if tipo in ("1", "2", "3"):
             break
-        print("  Error: opción inválida.")
+        ui.mensaje_error("Opción inválida.")
 
     ejemplos = {"1": "A01", "2": "E01", "3": "R01"}
+    print()
     codigo = pedir_codigo_nuevo(inventario, ejemplos[tipo])
     nombre = leer_texto("Nombre: ")
     precio = leer_decimal("Precio (S/): ")
@@ -92,6 +118,7 @@ def registrar_producto(inventario):
         "categoria": categoria,
     }
 
+    print()
     if tipo == "1":
         datos["compatible_con"] = leer_texto("Compatible con (ej: PC, Android, Universal): ")
         producto = Accesorio(**datos)
@@ -104,88 +131,102 @@ def registrar_producto(inventario):
         producto = EquipoReacondicionado(**datos)
 
     inventario.agregar(producto)
-    print(f"\nProducto '{nombre}' registrado correctamente.")
+
+    ui.seccion("Producto registrado")
+    mostrar_tabla_productos([producto])
+    print()
+    ui.mensaje_ok(f"Producto '{nombre}' registrado correctamente.")
 
 
 def listar_productos(inventario):
-    print("\n--- LISTA DE PRODUCTOS ---")
     grupos = inventario.agrupar_por_categoria()  # {categoria: [productos]}
 
     if not grupos:
-        print("No hay productos registrados todavía.")
+        ui.seccion("Lista de productos")
+        ui.mensaje_aviso("No hay productos registrados todavía.")
         return
 
     for categoria, productos in grupos.items():
-        print(f"\n[{categoria}] ({len(productos)})")
-        for p in productos:
-            print(f"  {p.descripcion()}")  # polimorfismo: cada clase muestra distinto
+        ui.seccion(f"{categoria} ({len(productos)})")
+        mostrar_tabla_productos(productos)
 
-    total = sum(len(productos) for productos in grupos.values())
-    print(f"\nTotal: {total} producto(s) en {len(grupos)} categoría(s)")
+    todos = inventario.listar()
+    unidades = sum(p.stock for p in todos)
+    valor = sum(p.precio * p.stock for p in todos)
+
+    ui.seccion("Resumen del inventario")
+    ui.tarjetas([
+        ("PRODUCTOS", len(todos), ui.PRIMARIO),
+        ("CATEGORÍAS", len(grupos), ui.ACENTO),
+        ("UNIDADES", unidades, ui.PRIMARIO),
+        ("VALOR INVENTARIO", f"S/ {valor:,.2f}", ui.OK),
+    ])
+    print()
+    ui.mensaje_ok("Lista generada correctamente en la consola.")
 
 
 def buscar_producto(inventario):
-    print("\n--- BUSCAR PRODUCTO ---")
+    ui.seccion("Buscar producto")
     productos = inventario.listar()
 
     if not productos:
-        print("No hay productos registrados todavía.")
+        ui.mensaje_aviso("No hay productos registrados todavía.")
         return
 
-    print("Productos disponibles:")
-    for p in productos:
-        print(f"  {p.codigo} - {p.nombre}")
+    mostrar_tabla_productos(productos)
 
-    texto = leer_texto("\nEscribe el código o parte del nombre: ").lower()
+    texto = leer_texto("\nEscribe el código o parte del nombre: ")
 
-    encontrados = [
-        p for p in productos
-        if texto == p.codigo.lower() or texto in p.nombre.lower()
-    ]
+    # Usa la sobrecarga de Inventario.buscar (versión para str)
+    encontrados = inventario.buscar(texto)
 
     if not encontrados:
-        print("  Error: no se encontró ningún producto con ese dato.")
+        ui.mensaje_error("No se encontró ningún producto con ese dato.")
         return
 
-    print(f"\nResultados ({len(encontrados)}):")
+    ui.seccion(f"Resultados ({len(encontrados)})")
     for p in encontrados:
-        print(f"  ({p.tipo()}) {p.descripcion()}")
+        # polimorfismo: cada clase arma su propia descripción
+        lineas = textwrap.wrap(p.descripcion(), ui.ANCHO - 4)
+        ui.caja(lineas, f"{p.codigo} - detalle")
 
 
 def reponer_stock(inventario):
-    print("\n--- REPONER STOCK ---")
+    ui.seccion("Reponer stock")
     productos = inventario.listar()
 
     if not productos:
-        print("No hay productos registrados todavía.")
+        ui.mensaje_aviso("No hay productos registrados todavía.")
         return
 
-    print("Productos actuales:")
-    for p in productos:
-        print(f"  {p.codigo} - {p.nombre} | Stock actual: {p.stock}")
+    mostrar_tabla_productos(productos)
 
     codigo = leer_texto("\nCódigo del producto a reponer: ").upper()
     coincidencias = list(filter(lambda p: p.codigo == codigo, productos))
 
     if not coincidencias:
-        print("  Error: código no encontrado.")
+        ui.mensaje_error("Código no encontrado.")
         return
 
     producto = coincidencias[0]
-    print(f"  Producto: {producto.nombre} | Stock actual: {producto.stock}")
+    ui.mensaje_info(f"{producto.nombre} | Stock actual: {producto.stock}")
 
     while True:
         cantidad = leer_entero("Cantidad a agregar: ")
         if cantidad > 0:
             break
-        print("  Error: la cantidad debe ser mayor a 0.")
+        ui.mensaje_error("La cantidad debe ser mayor a 0.")
 
     producto.stock += cantidad
-    print(f"\nStock repuesto correctamente. "
-          f"'{producto.nombre}' ahora tiene {producto.stock} unidad(es).")
+    print()
+    ui.mensaje_ok(
+        f"Stock repuesto correctamente. "
+        f"'{producto.nombre}' ahora tiene {producto.stock} unidad(es)."
+    )
 
 
 # ---------- Opción 7: Detectar stock bajo (closure) ----------
+
 
 def crear_filtro_stock_bajo(limite):
     """Closure: recuerda el límite mínimo de stock para evaluar cada producto."""
@@ -196,22 +237,22 @@ def crear_filtro_stock_bajo(limite):
 
 
 def detectar_stock_bajo(inventario):
-    print("\n--- DETECTAR STOCK BAJO ---")
+    ui.seccion("Detectar stock bajo")
     productos = inventario.listar()
 
     if not productos:
-        print("No hay productos registrados todavía.")
+        ui.mensaje_aviso("No hay productos registrados todavía.")
         return
 
     limite = leer_entero("Mostrar productos con stock menor a (ej: 5): ")
     es_stock_bajo = crear_filtro_stock_bajo(limite)
     bajos = list(filter(es_stock_bajo, productos))
 
-    print(f"\n--- STOCK BAJO (menos de {limite} unidades) ---")
+    ui.seccion(f"Stock bajo (menos de {limite} unidades)")
     if not bajos:
-        print("Todos los productos tienen stock suficiente.")
+        ui.mensaje_ok("Todos los productos tienen stock suficiente.")
         return
 
-    for p in bajos:
-        print(f"  ({p.tipo()}) {p.descripcion()}")
-    print(f"\nTotal con stock bajo: {len(bajos)} producto(s)")
+    mostrar_tabla_productos(bajos, limite)
+    print()
+    ui.mensaje_aviso(f"Total con stock bajo: {len(bajos)} producto(s)")
