@@ -259,3 +259,129 @@ def registrar_venta(inventario):
             return
         else:
             ui.mensaje_error("Opción inválida.")
+
+# ---------- Opción 8: Reportes de ventas (reduce + agregación por parámetro) ----------
+
+
+def agregar_ventas(lista_ventas, fn_agregacion, valor_inicial=0):
+    """Función de orden superior: aplica una función de agregación usando reduce."""
+    return reduce(fn_agregacion, lista_ventas, valor_inicial)
+
+
+def agg_ingresos_totales(acumulado, venta):
+    return acumulado + venta.total
+
+
+def agg_unidades_vendidas(acumulado, venta):
+    return acumulado + sum(linea["cantidad"] for linea in venta.lineas)
+
+
+def agg_venta_mayor(actual, venta):
+    if actual is None or venta.total > actual.total:
+        return venta
+    return actual
+
+
+def agg_venta_menor(actual, venta):
+    if actual is None or venta.total < actual.total:
+        return venta
+    return actual
+
+
+def exportar_reporte_csv(ventas, total_ingresos, total_unidades, promedio):
+    """Genera un archivo CSV con el detalle de ventas y el resumen."""
+    marca_tiempo = datetime.now().strftime("%Y%m%d_%H%M%S")
+    nombre_archivo = f"reporte_ventas_{marca_tiempo}.csv"
+
+    # utf-8-sig asegura que Excel muestre bien tildes y símbolos
+    with open(nombre_archivo, mode="w", newline="", encoding="utf-8-sig") as archivo:
+        escritor = csv.writer(archivo)
+        escritor.writerow([
+            "venta_id", "fecha", "codigo_producto", "producto",
+            "cantidad", "precio_unitario", "subtotal", "total_venta"
+        ])
+
+        for v in ventas:
+            for linea in v.lineas:
+                escritor.writerow([
+                    f"#{v.codigo:03d}",
+                    v.fecha,
+                    linea["codigo"],
+                    linea["nombre"],
+                    linea["cantidad"],
+                    f"{linea['precio']:.2f}",
+                    f"{linea['precio'] * linea['cantidad']:.2f}",
+                    f"{v.total:.2f}",
+                ])
+
+        escritor.writerow([])
+        escritor.writerow(["RESUMEN", "VALOR"])
+        escritor.writerow(["Total de ventas", len(ventas)])
+        escritor.writerow(["Unidades vendidas", total_unidades])
+        escritor.writerow(["Ticket promedio (S/)", f"{promedio:.2f}"])
+        escritor.writerow(["Ingresos totales (S/)", f"{total_ingresos:.2f}"])
+
+    return nombre_archivo
+
+
+def reporte_ventas():
+    ui.seccion("Reportes de ventas")
+
+    if not ventas_registradas:
+        ui.mensaje_aviso("No hay ventas registradas todavía.")
+        return
+
+    # Uso de reduce con distintas funciones de agregación pasadas como parámetro
+    total_ingresos = agregar_ventas(ventas_registradas, agg_ingresos_totales, 0.0)
+    total_unidades = agregar_ventas(ventas_registradas, agg_unidades_vendidas, 0)
+    mayor = agregar_ventas(ventas_registradas, agg_venta_mayor, None)
+    menor = agregar_ventas(ventas_registradas, agg_venta_menor, None)
+    promedio = total_ingresos / len(ventas_registradas)
+
+    print()
+    ui.tarjetas([
+        ("VENTAS", len(ventas_registradas), ui.PRIMARIO),
+        ("UNIDADES", total_unidades, ui.ACENTO),
+        ("TICKET PROM.", f"S/ {promedio:.2f}", ui.PRIMARIO),
+        ("INGRESOS", f"S/ {total_ingresos:.2f}", ui.OK),
+    ])
+
+    filas = []
+    for v in ventas_registradas:
+        unidades_v = sum(linea["cantidad"] for linea in v.lineas)
+        resumen_prods = ", ".join(f"{l['nombre']} x{l['cantidad']}" for l in v.lineas)
+        filas.append([
+            f"{ui.ACENTO}#{v.codigo:03d}{ui.RESET}",
+            v.fecha,
+            resumen_prods[:38] + ("..." if len(resumen_prods) > 38 else ""),
+            unidades_v,
+            f"S/ {v.total:.2f}",
+            ])
+
+    filas.append([
+        "",
+        f"{ui.BOLD}TOTAL{ui.RESET}",
+        f"{len(ventas_registradas)} venta(s)",
+        f"{ui.BOLD}{total_unidades}{ui.RESET}",
+        f"{ui.BOLD}{ui.OK}S/ {total_ingresos:.2f}{ui.RESET}",
+    ])
+
+    ui.seccion("Detalle de ventas registradas")
+    ui.tabla(
+        ["VENTA", "FECHA", "PRODUCTOS", "UNID.", "TOTAL"],
+        filas,
+        ["<", "<", "<", ">", ">"],
+        pie=1,
+    )
+
+    print()
+    ui.mensaje_info(
+        f"Venta más alta: #{mayor.codigo:03d} (S/ {mayor.total:.2f}) | "
+        f"Venta más baja: #{menor.codigo:03d} (S/ {menor.total:.2f})"
+    )
+
+    nombre_csv = exportar_reporte_csv(
+        ventas_registradas, total_ingresos, total_unidades, promedio
+    )
+    print()
+    ui.mensaje_ok(f"Reporte exportado correctamente a '{nombre_csv}'.")
