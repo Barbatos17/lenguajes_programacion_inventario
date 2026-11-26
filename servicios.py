@@ -224,6 +224,41 @@ def reponer_stock(inventario):
         f"'{producto.nombre}' ahora tiene {producto.stock} unidad(es)."
     )
 
+    # ---------- Opción 6: Ordenar productos (lambda) ----------
+
+
+def ordenar_productos(inventario):
+    ui.seccion("Ordenar productos")
+    productos = inventario.listar()
+
+    if not productos:
+        ui.mensaje_aviso("No hay productos registrados todavía.")
+        return
+
+    criterios = {
+        "1": ("Precio (menor a mayor)", lambda p: p.precio, False),
+        "2": ("Precio (mayor a menor)", lambda p: p.precio, True),
+        "3": ("Stock (menor a mayor)", lambda p: p.stock, False),
+        "4": ("Stock (mayor a menor)", lambda p: p.stock, True),
+        "5": ("Nombre (A - Z)", lambda p: p.nombre.lower(), False),
+        "6": ("Categoría (A - Z)", lambda p: p.categoria[1].lower(), False),
+    }
+
+    ui.opciones([(k, desc) for k, (desc, _, _) in criterios.items()])
+
+    while True:
+        opcion = ui.pedir("\nElige el criterio de ordenamiento (1-6): ")
+        if opcion in criterios:
+            break
+        ui.mensaje_error("Opción inválida.")
+
+    etiqueta, clave_orden, inverso = criterios[opcion]
+    ordenados = sorted(productos, key=clave_orden, reverse=inverso)
+
+    ui.seccion(f"Productos ordenados por {etiqueta}")
+    mostrar_tabla_productos(ordenados)
+    print()
+    ui.mensaje_ok(f"Se ordenaron {len(ordenados)} producto(s) por {etiqueta.lower()}.")
 
 # ---------- Opción 7: Detectar stock bajo (closure) ----------
 
