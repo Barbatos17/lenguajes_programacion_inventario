@@ -7,8 +7,8 @@ from servicios import leer_entero, leer_texto, mostrar_tabla_productos
 # Código de venta automático (closure)
 
 
-def crear_generador_codigos():
-    ultimo = 0
+def crear_generador_codigos(inicio=0):
+    ultimo = inicio
 
     def siguiente():
         nonlocal ultimo
