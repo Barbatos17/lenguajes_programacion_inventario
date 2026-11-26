@@ -1,8 +1,8 @@
 import textwrap
-
+import csv
+from datetime import datetime
 import ui
-from modelos import CATEGORIAS, Accesorio, Equipo, EquipoReacondicionado
-
+from modelos import CATEGORIAS, Accesorio, Equipo, EquipoReacondicionado, obtener_categoria
 
 def mostrar_tabla_productos(productos, limite=5):
     """Tabla estándar de productos (la usan servicios.py y ventas.py)."""
@@ -173,20 +173,34 @@ def buscar_producto(inventario):
         ui.mensaje_aviso("No hay productos registrados todavía.")
         return
 
-    mostrar_tabla_productos(productos)
+    ui.opciones([
+        ("1", "Por código o nombre"),
+        ("2", "Por categoría"),
+    ])
 
-    texto = leer_texto("\nEscribe el código o parte del nombre: ")
+    while True:
+        modo = ui.pedir("\nElige cómo buscar (1-2): ")
+        if modo in ("1", "2"):
+            break
+        ui.mensaje_error("Opción inválida.")
 
-    # Usa la sobrecarga de Inventario.buscar (versión para str)
-    encontrados = inventario.buscar(texto)
+    if modo == "1":
+        mostrar_tabla_productos(productos)
+        texto = leer_texto("\nEscribe el código o parte del nombre: ")
+        # Sobrecarga 1: criterio str
+        encontrados = inventario.buscar(texto)
+    else:
+        categoria = pedir_categoria()
+        # Sobrecarga 2: criterio tuple (id, nombre)
+        encontrados = inventario.buscar(categoria)
 
     if not encontrados:
-        ui.mensaje_error("No se encontró ningún producto con ese dato.")
+        ui.mensaje_error("No se encontró ningún producto con ese criterio.")
         return
 
     ui.seccion(f"Resultados ({len(encontrados)})")
     for p in encontrados:
-        # polimorfismo: cada clase arma su propia descripción
+        # Polimorfismo: cada clase arma su propia descripción
         lineas = textwrap.wrap(p.descripcion(), ui.ANCHO - 4)
         ui.caja(lineas, f"{p.codigo} - detalle")
 
@@ -291,3 +305,108 @@ def detectar_stock_bajo(inventario):
     mostrar_tabla_productos(bajos, limite)
     print()
     ui.mensaje_aviso(f"Total con stock bajo: {len(bajos)} producto(s)")
+    # ---------- Opción 9: Exportar / Importar inventario CSV ----------
+
+
+def exportar_inventario_csv(inventario):
+    productos = inventario.listar()
+    if not productos:
+        ui.mensaje_aviso("No hay productos para exportar.")
+        return
+
+    marca = datetime.now().strftime("%Y%m%d_%H%M%S")
+    nombre_archivo = f"inventario_{marca}.csv"
+
+    with open(nombre_archivo, mode="w", newline="", encoding="utf-8-sig") as archivo:
+        campos = [
+            "tipo", "codigo", "nombre", "precio", "stock",
+            "categoria_id", "compatible_con", "meses_garantia", "meses_uso",
+        ]
+        escritor = csv.DictWriter(archivo, fieldnames=campos)
+        escritor.writeheader()
+
+        for p in productos:
+            escritor.writerow({
+                "tipo": p.tipo(),
+                "codigo": p.codigo,
+                "nombre": p.nombre,
+                "precio": f"{p.precio:.2f}",
+                "stock": p.stock,
+                "categoria_id": p.categoria[0],
+                "compatible_con": getattr(p, "compatible_con", ""),
+                "meses_garantia": getattr(p, "meses_garantia", ""),
+                "meses_uso": getattr(p, "meses_uso", ""),
+            })
+
+    print()
+    ui.mensaje_ok(f"Inventario exportado a '{nombre_archivo}' ({len(productos)} productos).")
+
+
+def importar_inventario_csv(inventario):
+    ruta = leer_texto("\nNombre o ruta del archivo CSV (ej: inventario.csv): ")
+
+    try:
+        with open(ruta, mode="r", newline="", encoding="utf-8-sig") as archivo:
+            lector = csv.DictReader(archivo)
+            agregados = 0
+            omitidos = 0
+
+            for fila in lector:
+                codigo = fila["codigo"].strip().upper()
+                if not codigo or inventario.existe_codigo(codigo):
+                    omitidos += 1
+                    continue
+
+                base = {
+                    "codigo": codigo,
+                    "nombre": fila["nombre"].strip(),
+                    "precio": float(fila["precio"]),
+                    "stock": int(fila["stock"]),
+                    "categoria": obtener_categoria(fila.get("categoria_id", "OTR").strip()),
+                }
+                tipo = fila.get("tipo", "").strip()
+
+                if tipo == "Accesorio":
+                    prod = Accesorio(
+                        compatible_con=fila.get("compatible_con") or "Universal",
+                        **base,
+                    )
+                elif tipo == "Equipo reacondicionado":
+                    prod = EquipoReacondicionado(
+                        meses_garantia=int(fila.get("meses_garantia") or 0),
+                        meses_uso=int(fila.get("meses_uso") or 0),
+                        **base,
+                    )
+                else:
+                    prod = Equipo(
+                        meses_garantia=int(fila.get("meses_garantia") or 0),
+                        **base,
+                    )
+
+                inventario.agregar(prod)
+                agregados += 1
+
+        print()
+        ui.mensaje_ok(f"Importación finalizada: {agregados} agregado(s), {omitidos} omitido(s).")
+    except FileNotFoundError:
+        ui.mensaje_error(f"No se encontró el archivo '{ruta}'.")
+    except (KeyError, ValueError) as e:
+        ui.mensaje_error(f"Formato de CSV inválido: {e}")
+
+
+def gestionar_csv(inventario):
+    ui.seccion("Inventario CSV")
+    ui.opciones([
+        ("1", "Exportar inventario actual a CSV"),
+        ("2", "Importar productos desde CSV"),
+    ])
+
+    while True:
+        opcion = ui.pedir("\nElige una opción (1-2): ")
+        if opcion == "1":
+            exportar_inventario_csv(inventario)
+            return
+        if opcion == "2":
+            importar_inventario_csv(inventario)
+            return
+        ui.mensaje_error("Opción inválida.")
