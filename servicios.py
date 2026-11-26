@@ -338,8 +338,19 @@ def exportar_inventario_csv(inventario):
                 "meses_uso": getattr(p, "meses_uso", ""),
             })
 
+    unidades = sum(p.stock for p in productos)
+    valor_total = sum(p.precio * p.stock for p in productos)
+
+    ui.seccion("Vista previa del inventario exportado")
+    mostrar_tabla_productos(productos)
     print()
-    ui.mensaje_ok(f"Inventario exportado a '{nombre_archivo}' ({len(productos)} productos).")
+    ui.tarjetas([
+        ("EXPORTADOS", len(productos), ui.PRIMARIO),
+        ("UNIDADES", unidades, ui.ACENTO),
+        ("VALOR TOTAL", f"S/ {valor_total:,.2f}", ui.OK),
+    ])
+    print()
+    ui.mensaje_ok(f"Inventario exportado correctamente a '{nombre_archivo}'.")
 
 
 def importar_inventario_csv(inventario):
@@ -348,13 +359,13 @@ def importar_inventario_csv(inventario):
     try:
         with open(ruta, mode="r", newline="", encoding="utf-8-sig") as archivo:
             lector = csv.DictReader(archivo)
-            agregados = 0
-            omitidos = 0
+            productos_agregados = []
+            codigos_omitidos = []
 
             for fila in lector:
                 codigo = fila["codigo"].strip().upper()
                 if not codigo or inventario.existe_codigo(codigo):
-                    omitidos += 1
+                    codigos_omitidos.append(codigo or "(vacío)")
                     continue
 
                 base = {
@@ -384,15 +395,30 @@ def importar_inventario_csv(inventario):
                     )
 
                 inventario.agregar(prod)
-                agregados += 1
+                productos_agregados.append(prod)
+
+        ui.seccion("Resultado de la importación CSV")
+        if productos_agregados:
+            mostrar_tabla_productos(productos_agregados)
+        else:
+            ui.mensaje_aviso("No se agregó ningún producto nuevo.")
+
+        if codigos_omitidos:
+            print()
+            ui.mensaje_info(f"Códigos omitidos (duplicados/vacíos): {', '.join(codigos_omitidos)}")
 
         print()
-        ui.mensaje_ok(f"Importación finalizada: {agregados} agregado(s), {omitidos} omitido(s).")
+        ui.tarjetas([
+            ("AGREGADOS", len(productos_agregados), ui.OK),
+            ("OMITIDOS", len(codigos_omitidos), ui.AVISO),
+            ("TOTAL INVENTARIO", len(inventario.listar()), ui.PRIMARIO),
+        ])
+        print()
+        ui.mensaje_ok(f"Importación completada desde '{ruta}'.")
     except FileNotFoundError:
         ui.mensaje_error(f"No se encontró el archivo '{ruta}'.")
     except (KeyError, ValueError) as e:
         ui.mensaje_error(f"Formato de CSV inválido: {e}")
-
 
 def gestionar_csv(inventario):
     ui.seccion("Inventario CSV")
