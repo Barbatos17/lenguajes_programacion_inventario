@@ -65,12 +65,12 @@ def mostrar_productos_disponibles(inventario):
 
 def calcular_total(inventario, caja):
     """Suma precio x cantidad de cada producto de la caja (map + reduce)."""
-    subtotales = map(
-        lambda item: buscar_por_codigo(inventario, item[0]).precio * item[1],
-        caja.items(),
-    )
+    subtotales = map(lambda item: _subtotal_item(inventario, item), caja.items())  # NOSONAR
     return reduce(lambda a, b: a + b, subtotales, 0)
 
+def _subtotal_item(inventario, item):
+    codigo, cantidad = item
+    return buscar_por_codigo(inventario, codigo).precio * cantidad
 
 def mostrar_resumen(inventario, caja):
     ui.seccion("Resumen de la venta")
@@ -331,7 +331,7 @@ def reporte_ventas():
         ui.mensaje_aviso("No hay ventas registradas todavía.")
         return
 
-    # Uso de reduce con distintas funciones de agregación pasadas como parámetro
+    # Agregaciones usando reduce + función pasada como parámetro
     total_ingresos = agregar_ventas(ventas_registradas, agg_ingresos_totales, 0.0)
     total_unidades = agregar_ventas(ventas_registradas, agg_unidades_vendidas, 0)
     mayor = agregar_ventas(ventas_registradas, agg_venta_mayor, None)
@@ -346,11 +346,12 @@ def reporte_ventas():
         ("INGRESOS", f"S/ {total_ingresos:.2f}", ui.OK),
     ])
 
-    filas = []
+    # 1) Tabla resumen por venta
+    filas_resumen = []
     for v in ventas_registradas:
         unidades_v = sum(linea["cantidad"] for linea in v.lineas)
         resumen_prods = ", ".join(f"{l['nombre']} x{l['cantidad']}" for l in v.lineas)
-        filas.append([
+        filas_resumen.append([
             f"{ui.ACENTO}#{v.codigo:03d}{ui.RESET}",
             v.fecha,
             resumen_prods[:38] + ("..." if len(resumen_prods) > 38 else ""),
@@ -358,7 +359,7 @@ def reporte_ventas():
             f"S/ {v.total:.2f}",
             ])
 
-    filas.append([
+    filas_resumen.append([
         "",
         f"{ui.BOLD}TOTAL{ui.RESET}",
         f"{len(ventas_registradas)} venta(s)",
@@ -366,12 +367,32 @@ def reporte_ventas():
         f"{ui.BOLD}{ui.OK}S/ {total_ingresos:.2f}{ui.RESET}",
     ])
 
-    ui.seccion("Detalle de ventas registradas")
+    ui.seccion("Resumen por venta")
     ui.tabla(
         ["VENTA", "FECHA", "PRODUCTOS", "UNID.", "TOTAL"],
-        filas,
+        filas_resumen,
         ["<", "<", "<", ">", ">"],
         pie=1,
+    )
+
+    # 2) Tabla detallada (espejo de las filas del CSV)
+    filas_detalle = []
+    for v in ventas_registradas:
+        for l in v.lineas:
+            filas_detalle.append([
+                f"{ui.ACENTO}#{v.codigo:03d}{ui.RESET}",
+                l["codigo"],
+                l["nombre"][:30] + ("..." if len(l["nombre"]) > 30 else ""),
+                l["cantidad"],
+                f"S/ {l['precio']:.2f}",
+                f"S/ {l['precio'] * l['cantidad']:.2f}",
+                ])
+
+    ui.seccion("Detalle exportado (línea por línea)")
+    ui.tabla(
+        ["VENTA", "CÓDIGO", "PRODUCTO", "CANT.", "P. UNIT.", "SUBTOTAL"],
+        filas_detalle,
+        ["<", "<", "<", ">", ">", ">"],
     )
 
     print()
@@ -384,4 +405,4 @@ def reporte_ventas():
         ventas_registradas, total_ingresos, total_unidades, promedio
     )
     print()
-    ui.mensaje_ok(f"Reporte exportado correctamente a '{nombre_csv}'.")
+    ui.mensaje_ok(f"Reporte mostrado en consola y exportado a '{nombre_csv}'.")
