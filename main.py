@@ -61,9 +61,9 @@ def mostrar_pantalla_principal(inventario):
         ("3", "Buscar producto", "Por código o nombre"),
         ("4", "Registrar venta", "Caja y comprobante"),
         ("5", "Reponer stock", "Sumar unidades"),
-        ("6", "Ordenar productos", "Próximamente"),
+        ("6", "Ordenar productos", "Por precio, stock o nombre"),
         ("7", "Detectar stock bajo", "Alerta de reposición"),
-        ("8", "Reportes de ventas", "Próximamente"),
+        ("8", "Reportes de ventas", "Resumen en consola y CSV"),
         None,
         ("0", "Salir del sistema", "Cerrar el programa"),
     ])
@@ -93,10 +93,12 @@ def main():
             ventas.registrar_venta(inventario)
         elif opcion == "5":
             servicios.reponer_stock(inventario)
+        elif opcion == "6":
+            servicios.ordenar_productos(inventario)
         elif opcion == "7":
             servicios.detectar_stock_bajo(inventario)
-        elif opcion in ("6", "8"):
-            proximamente()
+        elif opcion == "8":
+            ventas.reporte_ventas()
         elif opcion == "0":
             print()
             ui.mensaje_ok("Hasta luego.")
@@ -106,6 +108,8 @@ def main():
             ui.mensaje_error("Opción inválida, intenta de nuevo.")
 
         ui.pausa()
+
+
 
 
 if __name__ == "__main__":
