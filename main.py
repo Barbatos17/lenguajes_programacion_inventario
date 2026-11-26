@@ -64,6 +64,7 @@ def mostrar_pantalla_principal(inventario):
         ("6", "Ordenar productos", "Por precio, stock o nombre"),
         ("7", "Detectar stock bajo", "Alerta de reposición"),
         ("8", "Reportes de ventas", "Resumen en consola y CSV"),
+        ("9", "Inventario CSV", "Exportar o importar"),
         None,
         ("0", "Salir del sistema", "Cerrar el programa"),
     ])
@@ -76,8 +77,13 @@ def proximamente():
 
 def main():
     inventario = Inventario()
-    cargar_datos_ejemplo(inventario)
-    ui.cargando("Cargando inventario", 0.8)
+
+    if persistencia.cargar_datos(inventario):
+        ui.cargando("Cargando datos desde datos.json", 0.8)
+    else:
+        cargar_datos_ejemplo(inventario)
+        persistencia.guardar_datos(inventario)
+        ui.cargando("Inicializando inventario de ejemplo", 0.8)
 
     while True:
         mostrar_pantalla_principal(inventario)
@@ -85,23 +91,30 @@ def main():
 
         if opcion == "1":
             servicios.registrar_producto(inventario)
+            persistencia.guardar_datos(inventario)
         elif opcion == "2":
             servicios.listar_productos(inventario)
         elif opcion == "3":
             servicios.buscar_producto(inventario)
         elif opcion == "4":
             ventas.registrar_venta(inventario)
+            persistencia.guardar_datos(inventario)
         elif opcion == "5":
             servicios.reponer_stock(inventario)
+            persistencia.guardar_datos(inventario)
         elif opcion == "6":
             servicios.ordenar_productos(inventario)
         elif opcion == "7":
             servicios.detectar_stock_bajo(inventario)
         elif opcion == "8":
             ventas.reporte_ventas()
+        elif opcion == "9":
+            servicios.gestionar_csv(inventario)
+            persistencia.guardar_datos(inventario)
         elif opcion == "0":
+            persistencia.guardar_datos(inventario)
             print()
-            ui.mensaje_ok("Hasta luego.")
+            ui.mensaje_ok("Datos guardados. Hasta luego.")
             break
         else:
             print()
