@@ -61,9 +61,9 @@ def mostrar_pantalla_principal(inventario):
         ("3", "Buscar producto", "Por código o nombre"),
         ("4", "Registrar venta", "Caja y comprobante"),
         ("5", "Reponer stock", "Sumar unidades"),
-        ("6", "Ordenar productos", "Próximamente"),
+        ("6", "Ordenar productos", "Ordenar por nombre, precio o stock"),
         ("7", "Detectar stock bajo", "Alerta de reposición"),
-        ("8", "Reportes de ventas", "Próximamente"),
+        ("8", "Reportes de ventas", "reportes de ventas y ganancias"),
         None,
         ("0", "Salir del sistema", "Cerrar el programa"),
     ])
