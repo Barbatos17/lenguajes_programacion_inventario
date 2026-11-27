@@ -259,3 +259,147 @@ def registrar_venta(inventario):
             return
         else:
             ui.mensaje_error("Opción inválida.")
+
+
+
+# ---------- Opción 8: Reportes de ventas (reduce + agregación como parámetro) ----------
+
+
+def generar_reporte(ventas, agregacion, inicial):
+    """Recorre las ventas con reduce, aplicando la función de agregación recibida."""
+    return reduce(agregacion, ventas, inicial)
+
+
+# Funciones de agregación: reciben (acumulado, venta) y devuelven el nuevo acumulado.
+
+
+def sumar_ingresos(acumulado, venta):
+    return acumulado + venta.total
+
+
+def sumar_unidades(acumulado, venta):
+    return acumulado + sum(linea["cantidad"] for linea in venta.lineas)
+
+
+def unidades_por_producto(acumulado, venta):
+    for linea in venta.lineas:
+        nombre = linea["nombre"]
+        acumulado[nombre] = acumulado.get(nombre, 0) + linea["cantidad"]
+    return acumulado
+
+
+def ingresos_por_producto(acumulado, venta):
+    for linea in venta.lineas:
+        nombre = linea["nombre"]
+        acumulado[nombre] = acumulado.get(nombre, 0) + linea["precio"] * linea["cantidad"]
+    return acumulado
+
+
+def venta_mayor(actual, venta):
+    return venta if actual is None or venta.total > actual.total else actual
+
+
+# Pantallas de cada reporte
+
+
+def mostrar_resumen_general():
+    ingresos = generar_reporte(ventas_registradas, sumar_ingresos, 0)
+    unidades = generar_reporte(ventas_registradas, sumar_unidades, 0)
+    promedio = ingresos / len(ventas_registradas)
+
+    ui.seccion("Resumen general de ventas")
+    ui.tarjetas([
+        ("VENTAS", len(ventas_registradas), ui.PRIMARIO),
+        ("UNIDADES VENDIDAS", unidades, ui.ACENTO),
+        ("INGRESOS", f"S/ {ingresos:.2f}", ui.OK),
+        ("TICKET PROMEDIO", f"S/ {promedio:.2f}", ui.PRIMARIO),
+    ])
+
+
+def mostrar_ranking(datos, columna, formato):
+    """Tabla {producto: valor} ordenada de mayor a menor."""
+    ordenados = sorted(datos.items(), key=lambda par: par[1], reverse=True)
+    filas = [
+        [posicion, nombre, formato(valor)]
+        for posicion, (nombre, valor) in enumerate(ordenados, start=1)
+    ]
+    ui.tabla(["#", "PRODUCTO", columna], filas, [">", "<", ">"])
+
+
+def mostrar_unidades_por_producto():
+    ui.seccion("Unidades vendidas por producto")
+    datos = generar_reporte(ventas_registradas, unidades_por_producto, {})
+    mostrar_ranking(datos, "UNIDADES", str)
+
+
+def mostrar_ingresos_por_producto():
+    ui.seccion("Ingresos por producto")
+    datos = generar_reporte(ventas_registradas, ingresos_por_producto, {})
+    mostrar_ranking(datos, "INGRESOS", lambda valor: f"S/ {valor:.2f}")
+
+
+def mostrar_venta_mayor():
+    ui.seccion("Venta de mayor monto")
+    mayor = generar_reporte(ventas_registradas, venta_mayor, None)
+    util = ui.ANCHO - 4
+    lineas = [ui.par(f"{ui.GRIS}Fecha{ui.RESET}", mayor.fecha, util), None]
+    for linea in mayor.lineas:
+        izq = f"{linea['nombre']} x{linea['cantidad']}"
+        der = f"S/ {linea['precio'] * linea['cantidad']:.2f}"
+        lineas.append(ui.par(izq, der, util))
+    lineas += [
+        None,
+        ui.par(
+            f"{ui.BOLD}TOTAL{ui.RESET}",
+            f"{ui.BOLD}{ui.OK}S/ {mayor.total:.2f}{ui.RESET}",
+            util,
+        ),
+    ]
+    ui.caja(lineas, f"Venta #{mayor.codigo:03d}")
+
+
+def mostrar_historial():
+    ui.seccion("Historial de ventas")
+    filas = [
+        [f"#{v.codigo:03d}", v.fecha, len(v.lineas), f"S/ {v.total:.2f}"]
+        for v in ventas_registradas
+    ]
+    ui.tabla(["N.", "FECHA", "PRODUCTOS", "TOTAL"], filas, ["<", "<", ">", ">"])
+
+
+# Opción 8 del menú
+
+
+def reportes_ventas():
+    ui.seccion("Reportes de ventas")
+
+    if not ventas_registradas:
+        ui.mensaje_aviso("Aún no hay ventas registradas. Registra una en la opción 4.")
+        return
+
+    while True:
+        ui.seccion("¿Qué reporte deseas ver?")
+        ui.opciones([
+            ("1", "Resumen general"),
+            ("2", "Unidades vendidas por producto"),
+            ("3", "Ingresos por producto"),
+            ("4", "Venta de mayor monto"),
+            ("5", "Historial de ventas"),
+            ("0", "Volver al menú"),
+        ])
+        opcion = ui.pedir("Elige una opción: ")
+
+        if opcion == "1":
+            mostrar_resumen_general()
+        elif opcion == "2":
+            mostrar_unidades_por_producto()
+        elif opcion == "3":
+            mostrar_ingresos_por_producto()
+        elif opcion == "4":
+            mostrar_venta_mayor()
+        elif opcion == "5":
+            mostrar_historial()
+        elif opcion == "0":
+            return
+        else:
+            ui.mensaje_error("Opción inválida.")
