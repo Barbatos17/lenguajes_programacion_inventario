@@ -96,9 +96,9 @@ def main():
         elif opcion == "6":
             servicios.ordenar_productos(inventario)
         elif opcion == "7":
-           servicios.detectar_stock_bajo(inventario)
+            servicios.detectar_stock_bajo(inventario)
         elif opcion == "8":
-           ventas.reportes_ventas()
+            ventas.reportes_ventas()
         elif opcion == "0":
             print()
             ui.mensaje_ok("Hasta luego.")
