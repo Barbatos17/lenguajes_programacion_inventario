@@ -255,4 +255,63 @@ def detectar_stock_bajo(inventario):
 
     mostrar_tabla_productos(bajos, limite)
     print()
-    ui.mensaje_aviso(f"Total con stock bajo: {len(bajos)} producto(s)")
+    ui.mensaje_aviso(f"Total con stock bajo: {len(bajos)} producto(s)")                                          
+
+
+# ---------- Opción 6: Ordenar productos (con lambda) ----------
+
+# clave del menú -> (nombre visible, lambda que extrae el valor por el que se ordena)
+CRITERIOS_ORDEN = {
+    "1": ("Nombre", lambda p: p.nombre.lower()),
+    "2": ("Precio", lambda p: p.precio),
+    "3": ("Stock", lambda p: p.stock),
+    "4": ("Código", lambda p: p.codigo),
+}
+
+
+def pedir_criterio_orden():
+    """Muestra los criterios y devuelve la tupla (nombre, lambda) elegida."""
+    ui.seccion("Ordenar por")
+    ui.opciones([(clave, nombre) for clave, (nombre, _) in CRITERIOS_ORDEN.items()])
+
+    while True:
+        opcion = ui.pedir(f"Elige el criterio (1-{len(CRITERIOS_ORDEN)}): ")
+        if opcion in CRITERIOS_ORDEN:
+            return CRITERIOS_ORDEN[opcion]
+        ui.mensaje_error("Opción inválida.")
+
+
+def pedir_sentido_orden():
+    """Devuelve True si el orden debe ser descendente."""
+    ui.seccion("Sentido del orden")
+    ui.opciones([
+        ("1", "Ascendente (de menor a mayor)"),
+        ("2", "Descendente (de mayor a menor)"),
+    ])
+
+    while True:
+        opcion = ui.pedir("Elige el sentido (1-2): ")
+        if opcion in ("1", "2"):
+            return opcion == "2"
+        ui.mensaje_error("Opción inválida.")
+
+
+def ordenar_productos(inventario):
+    ui.seccion("Ordenar productos")
+    productos = inventario.listar()
+
+    if not productos:
+        ui.mensaje_aviso("No hay productos registrados todavía.")
+        return
+
+    nombre_criterio, clave_orden = pedir_criterio_orden()
+    descendente = pedir_sentido_orden()
+
+    # sorted() crea una lista nueva: el inventario original no se modifica
+    ordenados = sorted(productos, key=clave_orden, reverse=descendente)
+
+    sentido = "descendente" if descendente else "ascendente"
+    ui.seccion(f"Productos por {nombre_criterio.lower()} ({sentido})")
+    mostrar_tabla_productos(ordenados)
+    print()
+    ui.mensaje_ok(f"{len(ordenados)} producto(s) ordenados por {nombre_criterio.lower()}.") 

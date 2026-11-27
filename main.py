@@ -93,7 +93,7 @@ def main():
             ventas.registrar_venta(inventario)
         elif opcion == "5":
             servicios.reponer_stock(inventario)
-             elif opcion == "6":
+        elif opcion == "6":
             servicios.ordenar_productos(inventario)
         elif opcion == "7":
             servicios.detectar_stock_bajo(inventario)
